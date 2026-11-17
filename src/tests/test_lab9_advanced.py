@@ -74,3 +74,68 @@ def test_slice_check_blocks_a_slice_below_floor():
     spec = dict(SPEC, slices=[{"name": "denial", "metric": "pass_rate", "min": 0.9, "blocking": True}])
     blocked, _ = gate.slice_check(_report(rows, {"pass_rate": 0.75}), base, spec)
     assert blocked == ["slice:denial/pass_rate"]
+
+
+@pytest.mark.parametrize("fn_name", ["pass_at_k", "pass_hat_k"])
+@pytest.mark.parametrize("args", [(0, 0, 1), (-1, 0, 1), (5, -1, 1), (5, 6, 1),
+                                  (5, 1, 6), (5, 1, 0), (5.0, 1, 1), (5, True, 1)])
+def test_advanced_pass_estimators_validate_inputs(stats, fn_name, args):
+    with pytest.raises(ValueError):
+        getattr(stats, fn_name)(*args)
+
+
+def test_advanced_slice_checks_missing_items():
+    from lab9 import gate
+    base = _report(copy.deepcopy(ROWS), {"pass_rate": 1.0})
+    spec = dict(SPEC, slices=[{"name": "money_movement", "metric": "pass_rate", "min": 0.95, "blocking": True}])
+    blocked, _ = gate.slice_check(base, base, spec)
+    assert blocked == ["slice:money_movement/pass_rate"]
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "evaluator_failure", "missing_value", "nan_row", "slice_tags", "seeds"])
+def test_advanced_integrity_rejects_report_tampering(mutation):
+    from lab9 import gate
+    base = _report(copy.deepcopy(ROWS), {"pass_rate": 1.0})
+    pr = copy.deepcopy(base)
+    if mutation == "duplicate":
+        pr["rows"][-1] = copy.deepcopy(pr["rows"][0])
+    elif mutation == "evaluator_failure":
+        pr["evaluator_failures"] = ["grader crashed"]
+    elif mutation == "missing_value":
+        pr["rows"][0]["pass_rate"] = None
+    elif mutation == "nan_row":
+        pr["rows"][0]["pass_rate"] = float("nan")
+    elif mutation == "slice_tags":
+        pr["rows"][0]["slices"] = []
+    elif mutation == "seeds":
+        pr["manifest"]["seeds"] = [1]
+    assert gate.integrity_check(pr, base, SPEC)
+
+
+@pytest.mark.parametrize("mutation", ["drop_metric", "disable_blocking", "drop_slice", "drop_ci", "lower_slice_floor"])
+def test_advanced_integrity_ratchet_rejects_constraint_removal(mutation):
+    from lab9 import gate
+    base = _report(copy.deepcopy(ROWS), {"pass_rate": 1.0})
+    original = copy.deepcopy(SPEC)
+    original["slices"] = [{"name": "denial", "metric": "pass_rate", "min": 0.9,
+                           "no_significant_drop": True, "blocking": True}]
+    loose = copy.deepcopy(original)
+    if mutation == "drop_metric":
+        loose["metrics"] = []
+    elif mutation == "disable_blocking":
+        loose["metrics"][0]["blocking"] = False
+    elif mutation == "drop_slice":
+        loose["slices"] = []
+    elif mutation == "drop_ci":
+        loose["slices"][0].pop("no_significant_drop")
+    elif mutation == "lower_slice_floor":
+        loose["slices"][0]["min"] = 0.5
+    assert gate.integrity_check(base, base, loose, original)
+
+
+def test_advanced_integrity_accepts_stricter_spec():
+    from lab9 import gate
+    base = _report(copy.deepcopy(ROWS), {"pass_rate": 1.0})
+    stricter = copy.deepcopy(SPEC)
+    stricter["metrics"][0]["threshold"]["min"] = 0.9
+    assert gate.integrity_check(base, base, stricter, SPEC) == []

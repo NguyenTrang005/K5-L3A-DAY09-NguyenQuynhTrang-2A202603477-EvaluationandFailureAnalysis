@@ -96,3 +96,60 @@ Khoảng tin cậy 95% dùng paired bootstrap trên trung bình theo item, cùng
 - Grader FM-08 nhận diện khẳng định hoàn tiền theo mẫu tiếng Việt và số tiền có đơn vị; chưa bao phủ mọi cách diễn đạt. Không có event reply thì không có khẳng định để đối chiếu; kết quả này không chứng minh chất lượng reply của swarm.
 - Trace không chứng minh đầy đủ mọi quyết định nội bộ; host không tự tính lại entitlement.
 - Khi thêm/bớt item hoặc đổi nhãn/coverage làm thay đổi bộ đánh giá, tăng eval-set version và sinh lại baseline. Khi thay metric/ngưỡng, tăng metric-spec version, ghi lý do; không nới ngưỡng trên cùng eval-set version.
+
+## Advanced — M5 và M6
+
+- Eval set v2: 28 item × 5 seed = 140 trial/shape, SHA `63236f14e925`; gồm 14 item v1 và 14 item adversarial của giảng viên. Nhãn vẫn tách riêng. `evalset --v2 --check` đạt 0 problem.
+- Bổ sung tag stale policy cho C-006 và sibling refund cho C-001/C-010/C-011/C-012 chỉ trong v2 để mỗi FM bị tấn công có ít nhất 3 item. Eval set v1 giữ SHA `ab9b393ef774`, không đổi baseline Core.
+- Mapping tám cơ chế trong `config/fm_map.yaml` tương ứng FM-02/03/04/05/06/07/08/09; taxonomy ghi bằng chứng runtime cho FM-06/07 và đối chứng phòng vệ cho FM-09.
+- Baseline v2: `E-swarm-20261117-6323`, `src/reports/baseline_v2.json`, cùng code M5–M6 hiện tại chưa commit.
+
+| Baseline metric v2 | Value |
+|---|---:|
+| approval_bypass | 0 |
+| secret_leak | 0 |
+| db_fact_kept | 0.9786 |
+| refund_amount_correct | 0.9786 |
+| pass_rate | 0.9786 |
+| reply_amount_correct | 1.0 |
+| proposal_amount_correct | 0.9786 |
+| pass_5 | 0.8929 |
+| pass_at_1 | 0.9786 |
+| pass_hat_1 | 0.9786 |
+| pass_at_3 | 1.0 |
+| pass_hat_3 | 0.9357 |
+| pass_at_5 | 1.0 |
+| pass_hat_5 | 0.8929 |
+| cost_per_success | 50.8077 |
+
+### A/A và chọn ngưỡng
+
+Lệnh: `python -m lab9.mutation --spec config/metric_spec_v2.yaml --aa 66,77,88,99,110`.
+
+So cùng swarm trên seeds 11/22/33/44/55 và 66/77/88/99/110: mọi metric có Δ=0; pass_hat_5=0.8929 ở cả hai bộ. Chọn sàn pass_hat_5=0.80, thấp hơn mức A/A quan sát 0.0929. Đây là bằng chứng trên hai bộ seed của MockLLM, không phải ước lượng đầy đủ phân phối nhiễu LLM thật. Với model thật, cần nhiều lần A/A và chọn ngưỡng ngoài dải dao động đo được, không suy rằng nhiễu luôn bằng 0.
+
+pass@k là xác suất ít nhất một trong k lần chạy thành công; pass^k yêu cầu cả k lần thành công. Hai hàm dùng tổ hợp lấy mẫu không hoàn lại, kiểm tra n/c/k nguyên và hợp lệ. Spec báo k=1,3,5; pass_hat_5 là metric blocking.
+
+### Slice gate và scorecard
+
+| Variant | Mong đợi | Kết quả | Lý do chặn |
+|---|---|---|---|
+| fixed | merge | merge | Không lỗi |
+| honest_refactor | merge | merge | Đổi lời văn/tool call không đổi kết quả |
+| seeded_regression | block | block | refund_amount_correct, pass_rate, pass_hat_5, reply_amount_correct và các slice |
+| slice_regression | block | block | Chỉ slice:money_movement/pass_rate |
+| flaky_regression | block | block | pass_rate, pass_hat_5 và slice:money_movement/pass_rate |
+
+Lệnh: `python -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json`.
+
+Kết quả: mutation score 3/3, false alarms 0. Slice money_movement dùng sàn 0.95; adversarial và denial dùng 0.90; cả ba blocking và kiểm CI không giảm có ý nghĩa. Không thay đổi ngưỡng của spec v1.
+
+Sau khi hoàn thiện M7, toàn bộ `tests/test_lab9_advanced.py` đạt **41 passed**. 
+
+### Giới hạn v2
+
+- Các số trên là public MockLLM; chưa kiểm chứng variant/trap ẩn.
+- Bug 1/3 seed không phát hiện ổn định chỉ với 5 seed; không hạ sàn để khớp một lần chạy.
+- Slice nhỏ vẫn có CI rộng; pass@k cao không bảo đảm pass^k cao.
+- Integrity/ratchet M7 đã kiểm chứng trên 4 trap public; chưa có kết quả trap ẩn.
+

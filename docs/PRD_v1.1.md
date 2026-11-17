@@ -114,7 +114,7 @@ exit 1 - blocked: refund_amount_correct, pass_rate, reply_amount_correct
 - 14 item public, 5 seed: CI rộng, chưa kiểm chứng hồi quy nhỏ và lỗi hiếm.
 - Judge replay công khai; cần nhãn người mới và held-out sau khi sửa rubric.
 - Grader reply dựa trên mẫu câu/số tiền có đơn vị, không bao phủ ngôn ngữ tự do; trace không có reply được coi là không có khẳng định để chấm.
-- Integrity và slice gate Advanced/Expert còn TODO; chưa tuyên bố chống report bị chỉnh hoặc bắt mọi lỗi trên slice.
+- Slice gate và integrity/ratchet đã triển khai, đạt scorecard 3/3, 0 báo nhầm và chặn 4/4 trap public; chưa kiểm chứng variant/trap ẩn. Xem mục v2 và M7 trong eval card.
 - Baseline hiện được commit trên main; quy trình PR, required checks và branch protection chưa được xác nhận đầy đủ.
 
 ## 7. Khi nào lên v1.2
