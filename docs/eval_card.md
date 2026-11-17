@@ -79,7 +79,7 @@ Khoảng tin cậy 95% dùng paired bootstrap trên trung bình theo item, cùng
 - [Judge audit](judge_audit.md): tone κ=0.757, Precision=0.857, Recall=0.800, đạt floors; helpful κ=0.375, Precision=1.000, Recall=0.300, bị loại vì bỏ sót 21/30 lỗi.
 - [Trace case C-014](trace_case.md): FM-05 bắt đầu ở event 5, proposal 120.000đ thay vì giữ quote 150.000đ, khiến ledger chỉ hoàn 90.000đ thay vì 120.000đ. Event 6 thể hiện FM-08.
 - Regression test: `src/tests/test_lab9_trace_case.py`; bộ test grader và trace case đạt 23 passed. `python -m lab9.mutation --detect` đạt detection 100%, false alarms 0% trên bộ public; không suy rộng sang variant ẩn.
-- Test thống kê M2/M4 đạt 6 passed. Workflow `lab9-eval-gate` lần #3 trên main thành công theo ảnh kết quả người học cung cấp.
+- Test thống kê M2/M4 đạt 6 passed. [Workflow #4](https://github.com/NguyenTrang005/K5-L3A-DAY09-NguyenQuynhTrang-2A202603477-EvaluationandFailureAnalysis/actions/runs/44079294560) trên main, commit `a6cf78d`, thành công ngày 17/11/2026: `detect`, `eval-gate` và `eval-gate-v2` đều xanh, theo ảnh kết quả người học cung cấp.
 
 ## Chủ trách nhiệm và phạm vi pilot
 
@@ -152,4 +152,22 @@ Sau khi hoàn thiện M7, toàn bộ `tests/test_lab9_advanced.py` đạt **41 p
 - Bug 1/3 seed không phát hiện ổn định chỉ với 5 seed; không hạ sàn để khớp một lần chạy.
 - Slice nhỏ vẫn có CI rộng; pass@k cao không bảo đảm pass^k cao.
 - Integrity/ratchet M7 đã kiểm chứng trên 4 trap public; chưa có kết quả trap ẩn.
+
+## Expert — M7 và kết quả CI
+
+- Toàn bộ test Advanced: **41 passed**.
+- Chặn **4/4 trap public**; lệnh tổng hợp traps trả exit 0.
+- Mutation score **3/3**, false alarms **0**: fixed và honest_refactor được merge, ba biến thể lỗi bị block.
+- Baseline v2 so với chính nó: **exit 0 — merge**, Δ=0 và CI=[0,0].
+- [Workflow #4](https://github.com/NguyenTrang005/K5-L3A-DAY09-NguyenQuynhTrang-2A202603477-EvaluationandFailureAnalysis/actions/runs/44079294560), commit `a6cf78d`: `eval-gate` và `eval-gate-v2` đều thành công trên main. 
+
+| Trap | Verdict |
+|---|---|
+| evaluator_errors_as_nan | exit 1 — blocked: integrity |
+| dropped_failing_rows | exit 1 — blocked: integrity |
+| cherry_picked_seeds | exit 1 — blocked: integrity |
+| loosened_spec | exit 1 — blocked: integrity (ratchet với base-spec) |
+
+Gate kiểm metric không hữu hạn/bị thiếu, evaluator failures, số dòng và lưới item×seed, dòng trùng và slice bị đổi. Ratchet kiểm metric/slice bị bỏ, nới min/max, bỏ blocking hoặc no_significant_drop trong cùng eval-set version. Public traps không chứng minh chống mọi cách giả report.
+
 

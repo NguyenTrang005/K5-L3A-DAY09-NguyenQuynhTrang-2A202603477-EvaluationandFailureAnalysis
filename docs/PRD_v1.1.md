@@ -130,3 +130,7 @@ exit 1 - blocked: refund_amount_correct, pass_rate, reply_amount_correct
 | Product | Nguyễn Quỳnh Trang | 17/11/2026 |
 | Eval owner | Nguyễn Quỳnh Trang — 2A202603477 | 17/11/2026  |
 
+
+## Kết quả CI sau M7
+
+Test thống kê M2/M4 đạt 6 passed. [Workflow #4](https://github.com/NguyenTrang005/K5-L3A-DAY09-NguyenQuynhTrang-2A202603477-EvaluationandFailureAnalysis/actions/runs/44079294560) trên main, commit `a6cf78d`, thành công ngày 17/11/2026: `detect`, `eval-gate` và `eval-gate-v2` đều xanh.
